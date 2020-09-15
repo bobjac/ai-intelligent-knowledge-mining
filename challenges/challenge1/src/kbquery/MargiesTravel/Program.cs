@@ -82,12 +82,12 @@ namespace MargiesTravel
             // Add a field mapping to match the Id field in the documents to 
             // the HotelId key field in the index
             List<FieldMapping> map = new List<FieldMapping> {
-                new FieldMapping("ContentMD5", "id", ),
+                new FieldMapping("URL", "id", FieldMappingFunction.Base64Encode()),
                 new FieldMapping("URL", "url"),
                 new FieldMapping("Name", "file_name"),
                 new FieldMapping("Id", "content"),
-                new FieldMapping("Id", "size"),
-                new FieldMapping("Id", "last_modified ")
+                new FieldMapping("ContentLength", "size"),
+                new FieldMapping("LastModified", "last_modified ")
             };
 
             Indexer blobIndexer = new Indexer(
