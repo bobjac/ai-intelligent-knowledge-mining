@@ -27,5 +27,8 @@ namespace MargiesTravel
 
         [IsFilterable, IsSortable, IsFacetable]
         public DateTimeOffset? last_modified { get; set; }
+
+        [IsSearchable]
+        public string languageCode { get; set; }
     }
 }

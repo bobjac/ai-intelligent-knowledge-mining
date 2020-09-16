@@ -7,6 +7,7 @@ using Microsoft.Azure.Search.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Rest.Azure;
 
+
 namespace MargiesTravel
 {
     class Program
@@ -27,12 +28,22 @@ namespace MargiesTravel
                 Console.WriteLine("Deleting index...\n");
                 await DeleteIndexIfExists(indexName, searchService);
 
+                // Create the skills
+                Console.WriteLine("Creating the skills....");
+                LanguageDetectionSkill languageDetectionSkill = CreateLanguageDetectionSkill();
+
+                List<Skill> skills = new List<Skill>();
+                skills.Add(languageDetectionSkill);
+
+                Skillset skillSet = CreateOrUpdateDemoSkillSet(searchService, skills);
+
+
                 Console.WriteLine("Creating index...\n");
                 await CreateIndex(indexName, searchService);
 
                 // Set up a Blob Storage data source and indexer, and run the indexer to merge hotel room data
                 Console.WriteLine("Indexing and merging review data from blob storage...\n");
-                await CreateAndRunBlobIndexer(indexName, searchService);
+                await CreateAndRunBlobIndexer(indexName, searchService, skillSet);
 
                 System.Threading.Thread.Sleep(4000);
                 Console.WriteLine("Complete.\n");
@@ -61,6 +72,51 @@ namespace MargiesTravel
             
             Console.WriteLine("Press any key to exit");
             Console.ReadKey();
+        }
+
+        private static LanguageDetectionSkill CreateLanguageDetectionSkill()
+        {
+            List<InputFieldMappingEntry> inputMappings = new List<InputFieldMappingEntry>();
+            inputMappings.Add(new InputFieldMappingEntry(
+                name: "text",
+                source: "/document/content"));
+
+            List<OutputFieldMappingEntry> outputMappings = new List<OutputFieldMappingEntry>();
+            outputMappings.Add(new OutputFieldMappingEntry(
+                name: "languageCode",
+                targetName: "languageCode"));
+
+            LanguageDetectionSkill languageDetectionSkill = new LanguageDetectionSkill(
+                description: "Detect the language used in the document",
+                context: "/document",
+                inputs: inputMappings,
+                outputs: outputMappings);
+
+            return languageDetectionSkill;
+        }
+
+        private static Skillset CreateOrUpdateDemoSkillSet(SearchServiceClient serviceClient, IList<Skill> skills)
+        {
+            CognitiveServicesByKey cognitiveServicesByKey = new CognitiveServicesByKey("835b4523d06f4615b02cbbf61c9069e4");
+            Skillset skillset = new Skillset(
+                name: "margiesskillset",
+                description: "Margie Travel skillset",
+                skills: skills, cognitiveServicesByKey);
+
+            // Create the skillset in your search service.
+            // The skillset does not need to be deleted if it was already created
+            // since we are using the CreateOrUpdate method
+            try
+            {
+                serviceClient.Skillsets.CreateOrUpdate(skillset);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Failed to create the skillset\n Exception message: {0}\n", e.Message);
+                //ExitProgram("Cannot continue without a skillset");
+            }
+
+            return skillset;
         }
 
         private static SearchServiceClient CreateSearchServiceClient(IConfigurationRoot configuration)
@@ -93,7 +149,7 @@ namespace MargiesTravel
             await searchService.Indexes.CreateAsync(definition);
         }
 
-        private static async Task CreateAndRunBlobIndexer(string indexName, SearchServiceClient searchService)
+        private static async Task CreateAndRunBlobIndexer(string indexName, SearchServiceClient searchService, Skillset skillSet)
         {
             DataSource blobDataSource = DataSource.AzureBlobStorage(
                 name: configuration["BlobStorageAccountName"],
@@ -122,7 +178,7 @@ namespace MargiesTravel
                 dataSourceName: blobDataSource.Name,
                 targetIndexName: indexName,
                 fieldMappings: map,
-     //           parameters: new IndexingParameters().,
+                skillsetName: skillSet.Name,
                 schedule: new IndexingSchedule(TimeSpan.FromDays(1)));
 
             // Reset the indexer if it already exists
@@ -158,7 +214,7 @@ namespace MargiesTravel
             parameters.SearchMode = SearchMode.All;
             parameters.QueryType = QueryType.Full;
 
-            results = indexClient.Documents.Search<TravelIndex>("\"New York\"", parameters);
+            results = indexClient.Documents.Search<TravelIndex>("New York", parameters);
             WriteDocuments(results);
 
             // Query 2
