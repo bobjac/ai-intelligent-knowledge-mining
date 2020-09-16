@@ -22,7 +22,7 @@ namespace MargiesTravel
         [IsSearchable, IsFilterable, IsSortable]
         public string content { get; set; }
 
-        [IsSearchable, IsFilterable, IsSortable, IsFacetable]
+       // [IsSearchable, IsFilterable, IsSortable, IsFacetable]
         public int size { get; set; }
 
         [IsFilterable, IsSortable, IsFacetable]

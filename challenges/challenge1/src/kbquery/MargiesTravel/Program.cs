@@ -82,12 +82,12 @@ namespace MargiesTravel
             // Add a field mapping to match the Id field in the documents to 
             // the HotelId key field in the index
             List<FieldMapping> map = new List<FieldMapping> {
-                new FieldMapping("URL", "id", FieldMappingFunction.Base64Encode()),
-                new FieldMapping("URL", "url"),
-                new FieldMapping("Name", "file_name"),
-                new FieldMapping("Id", "content"),
-                new FieldMapping("ContentLength", "size"),
-                new FieldMapping("LastModified", "last_modified ")
+                new FieldMapping("metadata_storage_path", "id", FieldMappingFunction.Base64Encode()),
+                new FieldMapping("metadata_storage_path", "url"),
+                new FieldMapping("metadata_storage_name", "file_name"),
+                new FieldMapping("content", "content"),
+                new FieldMapping("metadata_storage_size", "size"),
+                new FieldMapping("metadata_storage_last_modified", "last_modified")
             };
 
             Indexer blobIndexer = new Indexer(
@@ -95,7 +95,7 @@ namespace MargiesTravel
                 dataSourceName: blobDataSource.Name,
                 targetIndexName: indexName,
                 fieldMappings: map,
-                parameters: new IndexingParameters().ParseJson(),
+                parameters: new IndexingParameters().ParseText(),
                 schedule: new IndexingSchedule(TimeSpan.FromDays(1)));
 
             // Reset the indexer if it already exists
