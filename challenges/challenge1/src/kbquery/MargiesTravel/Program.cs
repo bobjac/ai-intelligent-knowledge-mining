@@ -30,13 +30,9 @@ namespace MargiesTravel
 
                 // Create the skills
                 Console.WriteLine("Creating the skills....");
-                LanguageDetectionSkill languageDetectionSkill = CreateLanguageDetectionSkill();
-
-                List<Skill> skills = new List<Skill>();
-                skills.Add(languageDetectionSkill);
-
+                
+                var skills = CreateSkills();
                 Skillset skillSet = CreateOrUpdateDemoSkillSet(searchService, skills);
-
 
                 Console.WriteLine("Creating index...\n");
                 await CreateIndex(indexName, searchService);
@@ -72,6 +68,16 @@ namespace MargiesTravel
             
             Console.WriteLine("Press any key to exit");
             Console.ReadKey();
+        }
+
+        private static List<Skill> CreateSkills()
+        {
+            LanguageDetectionSkill languageDetectionSkill = CreateLanguageDetectionSkill();
+
+            List<Skill> skills = new List<Skill>();
+            skills.Add(languageDetectionSkill);
+
+            return skills;
         }
 
         private static LanguageDetectionSkill CreateLanguageDetectionSkill()
