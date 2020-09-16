@@ -214,7 +214,30 @@ namespace MargiesTravel
             return languageDetectionSkill;
         }
 
-        
+
+        private static OcrSkill CreateOcrSkill()
+        {
+            List<InputFieldMappingEntry> inputMappings = new List<InputFieldMappingEntry>();
+            inputMappings.Add(new InputFieldMappingEntry(
+            name: "image",
+            source: "/document/normalized_images/*"));
+
+            List<OutputFieldMappingEntry> outputMappings = new List<OutputFieldMappingEntry>();
+            outputMappings.Add(new OutputFieldMappingEntry(
+            name: "text",
+            targetName: "text"));
+
+            OcrSkill ocrSkill = new OcrSkill(
+            description: "Extract text (plain and structured) from image",
+            context: "/document/normalized_images/*",
+            inputs: inputMappings,
+            outputs: outputMappings,
+            defaultLanguageCode: OcrSkillLanguage.En,
+            shouldDetectOrientation: true);
+
+            return ocrSkill;
+        }
+
 
 
         private static Skillset CreateOrUpdateDemoSkillSet(SearchServiceClient serviceClient, IList<Skill> skills)
