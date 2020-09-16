@@ -122,7 +122,7 @@ namespace MargiesTravel
                 dataSourceName: blobDataSource.Name,
                 targetIndexName: indexName,
                 fieldMappings: map,
-                parameters: new IndexingParameters().ParseText(),
+     //           parameters: new IndexingParameters().,
                 schedule: new IndexingSchedule(TimeSpan.FromDays(1)));
 
             // Reset the indexer if it already exists
@@ -153,8 +153,12 @@ namespace MargiesTravel
 
             // Query 1 
             Console.WriteLine("Query 1: Search for term 'New York', returning the full document");
+            
             parameters = new SearchParameters();
-            results = indexClient.Documents.Search<TravelIndex>("New", parameters);
+            parameters.SearchMode = SearchMode.All;
+            parameters.QueryType = QueryType.Full;
+
+            results = indexClient.Documents.Search<TravelIndex>("\"New York\"", parameters);
             WriteDocuments(results);
 
             // Query 2
@@ -214,7 +218,7 @@ namespace MargiesTravel
 
             foreach (SearchResult<TravelIndex> result in resultsList)
             {
-                Console.WriteLine(result.Document);
+                Console.WriteLine(result.Document.file_name);
             }
 
             Console.WriteLine();
