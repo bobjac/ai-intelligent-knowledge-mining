@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using Microsoft.Azure.Search;
 using Microsoft.Azure.Search.Models;
 using Microsoft.Spatial;
@@ -30,5 +31,25 @@ namespace MargiesTravel
 
         [IsSearchable]
         public string languageCode { get; set; }
+
+        [IsSearchable]
+        public string sentiment { get; set; }
+
+        public string[] keyPhrases { get; set; }
+
+        [IsSearchable]
+        public string[] urls { get; set; }
+
+        [IsSearchable]
+        public string[] persons { get; set; }
+
+        [IsSearchable]
+        public string[] emails { get; set; }
+
+        [IsSearchable]
+        public string[] location { get; set; }
+
+        [IsSearchable]
+        public string[] dateTimes { get; set; }
     }
 }

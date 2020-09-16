@@ -70,14 +70,127 @@ namespace MargiesTravel
             Console.ReadKey();
         }
 
+        private static KeyPhraseExtractionSkill CreateKeyPhraseExtractionSkill()
+        {
+            List<InputFieldMappingEntry> inputMappings = new List<InputFieldMappingEntry>();
+            inputMappings.Add(new InputFieldMappingEntry(
+                name: "text",
+                source: "/document/content"));
+
+   //         inputMappings.Add(new InputFieldMappingEntry(
+   //             name: "languageCode",
+   //             source: "/document/languageCode"));
+        
+            List<OutputFieldMappingEntry> outputMappings = new List<OutputFieldMappingEntry>();
+
+            outputMappings.Add(new OutputFieldMappingEntry(
+                name: "keyPhrases",
+                targetName: "keyPhrases"));
+
+        
+            KeyPhraseExtractionSkill keyPhraseExtractionSkill = new KeyPhraseExtractionSkill(
+                description: "Extract the key phrases",
+                context: "/document",
+                inputs: inputMappings,
+                outputs: outputMappings);
+
+            return keyPhraseExtractionSkill;
+        }
+
+        private static EntityRecognitionSkill CreateEntityRecognitionSkill()
+        {
+        //Recognizes URL from document
+            List<InputFieldMappingEntry> inputMappings = new List<InputFieldMappingEntry>();
+            inputMappings.Add(new InputFieldMappingEntry(
+                name: "text",
+                source: "/document/content"));
+
+            List<OutputFieldMappingEntry> outputMappings = new List<OutputFieldMappingEntry>();
+            outputMappings.Add(new OutputFieldMappingEntry(
+                name: "urls",
+                targetName: "urls"));
+
+            outputMappings.Add(new OutputFieldMappingEntry(
+                name: "persons",
+                targetName: "persons"));
+
+            outputMappings.Add(new OutputFieldMappingEntry(
+                name: "emails",
+                targetName: "emails"));
+
+            outputMappings.Add(new OutputFieldMappingEntry(
+                name: "locations",
+                targetName: "locations"));
+
+            outputMappings.Add(new OutputFieldMappingEntry(
+                name: "dateTimes",
+                targetName: "dateTimes"));
+
+ 
+            List<EntityCategory> entityCategory = new List<EntityCategory>();
+            entityCategory.Add(EntityCategory.Url);
+            entityCategory.Add(EntityCategory.Person);
+            entityCategory.Add(EntityCategory.Email);
+            entityCategory.Add(EntityCategory.Location);
+            entityCategory.Add(EntityCategory.Datetime);
+
+ 
+            EntityRecognitionSkill entityRecognitionSkill = new EntityRecognitionSkill(
+                description: "Recognize Entities",
+                context: "/document/content",
+                inputs: inputMappings,
+                outputs: outputMappings,
+                categories: entityCategory,
+                defaultLanguageCode: EntityRecognitionSkillLanguage.En);
+
+            return entityRecognitionSkill;
+        }
+
         private static List<Skill> CreateSkills()
         {
             LanguageDetectionSkill languageDetectionSkill = CreateLanguageDetectionSkill();
+            SentimentSkill sentimentSkill = CreateSentimentSkill();
+            KeyPhraseExtractionSkill keyPhraseSkill = CreateKeyPhraseExtractionSkill();
+            EntityRecognitionSkill entityRecognitionSkill = CreateEntityRecognitionSkill();
 
             List<Skill> skills = new List<Skill>();
-            skills.Add(languageDetectionSkill);
+            // skills.Add(languageDetectionSkill);
+            skills.Add(sentimentSkill);
+            skills.Add(keyPhraseSkill);
+            skills.Add(entityRecognitionSkill);
 
             return skills;
+        }
+
+        private static SentimentSkill CreateSentimentSkill()
+        {
+            List<InputFieldMappingEntry> inputMappings = new List<InputFieldMappingEntry>();
+            inputMappings.Add(new InputFieldMappingEntry(
+                name: "text",
+                source: "/document/content"));
+
+
+            List<OutputFieldMappingEntry> outputMappings = new List<OutputFieldMappingEntry>();
+            outputMappings.Add(new OutputFieldMappingEntry(
+                name: "score",
+                targetName: "sentiment"));
+
+
+            SentimentSkill sentskill = new SentimentSkill(
+                description: "Score the sentiment",
+                context: "/document",
+                inputs: inputMappings, 
+                outputs: outputMappings);
+
+
+            //LanguageDetectionSkill languageDetectionSkill = new LanguageDetectionSkill(
+            //    description: "Score the sentiment in the document",
+            //   context: "/document",
+            //    inputs: inputMappings,
+            //    outputs: outputMappings);
+
+
+            return sentskill;
         }
 
         private static LanguageDetectionSkill CreateLanguageDetectionSkill()
@@ -100,6 +213,9 @@ namespace MargiesTravel
 
             return languageDetectionSkill;
         }
+
+        
+
 
         private static Skillset CreateOrUpdateDemoSkillSet(SearchServiceClient serviceClient, IList<Skill> skills)
         {
@@ -178,6 +294,17 @@ namespace MargiesTravel
                 new FieldMapping("metadata_storage_size", "size"),
                 new FieldMapping("metadata_storage_last_modified", "last_modified")
             };
+
+            List<FieldMapping> outputMappings = new List<FieldMapping>();
+            outputMappings.Add(new FieldMapping(
+                sourceFieldName: "/document/pages/*/organizations/*",
+                targetFieldName: "organizations"));
+            outputMappings.Add(new FieldMapping(
+                sourceFieldName: "/document/pages/*/keyPhrases/*",
+                targetFieldName: "keyPhrases"));
+            outputMappings.Add(new FieldMapping(
+                sourceFieldName: "/document/languageCode",
+                targetFieldName: "languageCode"));
 
             Indexer blobIndexer = new Indexer(
                 name: "hotelreviews-blob-indexer",
