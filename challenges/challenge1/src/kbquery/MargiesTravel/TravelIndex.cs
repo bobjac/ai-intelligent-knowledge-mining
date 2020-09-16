@@ -19,7 +19,7 @@ namespace MargiesTravel
         [Analyzer(AnalyzerName.AsString.EnLucene)]
         public string file_name { get; set; }
 
-        [IsSearchable, IsFilterable, IsSortable]
+        [IsSearchable]
         public string content { get; set; }
 
        // [IsSearchable, IsFilterable, IsSortable, IsFacetable]

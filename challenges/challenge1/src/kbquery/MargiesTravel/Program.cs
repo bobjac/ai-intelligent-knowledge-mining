@@ -21,18 +21,45 @@ namespace MargiesTravel
 
             string indexName = "reviewsindex";
 
-            // Next, create the search index
-            Console.WriteLine("Deleting index...\n");
-            await DeleteIndexIfExists(indexName, searchService);
+            if (!searchService.Indexes.Exists(indexName))
+            {
+                // Next, create the search index
+                Console.WriteLine("Deleting index...\n");
+                await DeleteIndexIfExists(indexName, searchService);
 
-            Console.WriteLine("Creating index...\n");
-            await CreateIndex(indexName, searchService);
+                Console.WriteLine("Creating index...\n");
+                await CreateIndex(indexName, searchService);
 
-            // Set up a Blob Storage data source and indexer, and run the indexer to merge hotel room data
-            Console.WriteLine("Indexing and merging hotel room data from blob storage...\n");
-            await CreateAndRunBlobIndexer(indexName, searchService);
+                // Set up a Blob Storage data source and indexer, and run the indexer to merge hotel room data
+                Console.WriteLine("Indexing and merging review data from blob storage...\n");
+                await CreateAndRunBlobIndexer(indexName, searchService);
 
-            Console.WriteLine("Complete.  Press any key to end application...\n");
+                System.Threading.Thread.Sleep(4000);
+                Console.WriteLine("Complete.\n");
+            }
+            else
+            {
+                Console.WriteLine("The index already exists.  Enter 1 to delete the index.  Enter 2 to query the existing index");
+                int choice = Convert.ToInt32(Console.ReadLine());
+                if (choice == 1)
+                {
+                    await DeleteIndexIfExists(indexName, searchService);
+                    Console.WriteLine("Index deleted.  Exiting app");
+                }
+                else if (choice == 2)
+                {
+                    Console.WriteLine("{0}", "Searching index...\n");
+                    ISearchIndexClient indexClient = searchService.Indexes.GetClient(indexName);
+                    RunQueries(indexClient);
+                }
+                else
+                {
+                    Console.WriteLine("Invalid Choice.  Exiting app");
+                    Console.ReadKey();
+                }
+            }
+            
+            Console.WriteLine("Press any key to exit");
             Console.ReadKey();
         }
 
@@ -116,6 +143,81 @@ namespace MargiesTravel
             {
                 Console.WriteLine("Failed to run indexer: {0}", e.Response.Content);
             }
+        }
+
+        // Add query logic and handle results
+        private static void RunQueries(ISearchIndexClient indexClient)
+        {
+            SearchParameters parameters;
+            DocumentSearchResult<TravelIndex> results;
+
+            // Query 1 
+            Console.WriteLine("Query 1: Search for term 'New York', returning the full document");
+            parameters = new SearchParameters();
+            results = indexClient.Documents.Search<TravelIndex>("New", parameters);
+            WriteDocuments(results);
+
+            // Query 2
+           // Console.WriteLine("Query 2: Search on the term 'Atlanta', returning selected fields");
+          //  Console.WriteLine("Returning only these fields: HotelName, Tags, Address:\n");
+        //    parameters =
+        //        new SearchParameters()
+        //        {
+        //            Select = new[] { "HotelName", "Tags", "Address" },
+        //        };
+       //     results = indexClient.Documents.Search<TravelIndex>("Atlanta", parameters);
+       //     WriteDocuments(results);
+
+            // Query 3
+            Console.WriteLine("Query 2: Search for the terms 'London' and 'Buckingham Palace'");
+            //Console.WriteLine("Return only these fields: HotelName, Description, and Tags:\n");
+            parameters =
+                new SearchParameters();
+            //    {
+           //         Select = new[] { "HotelName", "Description", "Tags" }
+           //     };
+            results = indexClient.Documents.Search<TravelIndex>("London, Buckingham Palace", parameters);
+            WriteDocuments(results);
+
+            // Query 4 -filtered query
+        /*    Console.WriteLine("Query 4: Filter on ratings greater than 4");
+            Console.WriteLine("Returning only these fields: HotelName, Rating:\n");
+            parameters =
+                new SearchParameters()
+                {
+                    Filter = "Rating gt 4",
+                    Select = new[] { "HotelName", "Rating" }
+                };
+            results = indexClient.Documents.Search<TravelIndex>("*", parameters);
+            WriteDocuments(results); */
+
+            // Query 5 - top 2 results
+         /*   Console.WriteLine("Query 5: Search on term 'boutique'");
+            Console.WriteLine("Sort by rating in descending order, taking the top two results");
+            Console.WriteLine("Returning only these fields: HotelId, HotelName, Category, Rating:\n");
+            parameters =
+                new SearchParameters()
+                {
+                    OrderBy = new[] { "Rating desc" },
+                    Select = new[] { "HotelId", "HotelName", "Category", "Rating" },
+                    Top = 2
+                };
+            results = indexClient.Documents.Search<TravelIndex>("boutique", parameters);
+            WriteDocuments(results); */
+        }
+
+        // Handle search results, writing output to the console
+        private static void WriteDocuments(DocumentSearchResult<TravelIndex> searchResults)
+        {
+            var resultsList = searchResults.Results;
+            Console.WriteLine($"There are {resultsList.Count} documents in the results");
+
+            foreach (SearchResult<TravelIndex> result in resultsList)
+            {
+                Console.WriteLine(result.Document);
+            }
+
+            Console.WriteLine();
         }
     }
 }
