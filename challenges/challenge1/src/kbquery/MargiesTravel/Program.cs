@@ -347,7 +347,7 @@ namespace MargiesTravel
             return serviceClient;
         }
 
-        private static Index ConfigureSearchFields(SearchServiceClient serviceClient)
+        private static SearchServiceClient ConfigureSearchFields(SearchServiceClient serviceClient)
         {
             Index index = serviceClient.Indexes.Get("reviewsindex");
             index.Fields.First(f => f.Name == "merged_text").SynonymMaps = new[] { "desc-synonymmap" };
