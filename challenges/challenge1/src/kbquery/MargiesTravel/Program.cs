@@ -442,7 +442,12 @@ namespace MargiesTravel
             var definition = new Microsoft.Azure.Search.Models.Index()
             {
                 Name = indexName,
-                Fields = FieldBuilder.BuildForType<TravelIndex>()
+                Fields = FieldBuilder.BuildForType<TravelIndex>(),
+                Suggesters = new List<Suggester>() {new Suggester()
+                {
+                    Name = "sg",
+                    SourceFields = new string[] { "location" }
+                }}
             };
             await searchService.Indexes.CreateAsync(definition);
         }
