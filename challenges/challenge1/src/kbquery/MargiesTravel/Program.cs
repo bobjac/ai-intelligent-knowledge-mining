@@ -347,7 +347,15 @@ namespace MargiesTravel
             return serviceClient;
         }
 
-        
+        private static Index ConfigureSearchFields(SearchServiceClient serviceClient)
+        {
+            Index index = serviceClient.Indexes.Get("reviewsindex");
+            index.Fields.First(f => f.Name == "merged_text").SynonymMaps = new[] { "desc-synonymmap" };
+            index.Fields.First(f => f.Name == "top_10_words").SynonymMaps = new[] { "desc-synonymmap" };
+
+            serviceClient.Indexes.CreateOrUpdate(index);
+            return serviceClient;
+        }
 
         private static MergeSkill CreateMergeSkill()
         {
