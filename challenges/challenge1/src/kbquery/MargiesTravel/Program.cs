@@ -333,6 +333,22 @@ namespace MargiesTravel
             return ocrSkill;
         }
 
+        private static SearchServiceClient AddSynonym(SearchServiceClient serviceClient)
+        {
+            var synonymMap = new SynonymMap()
+            {
+                Name = "desc-synonymmap",
+                Format = "solr",
+                Synonyms = "United States, America, United States of America\n
+                            UK, United Kingdom, Britain, Great Britain\n
+                            UAE, Emirates, United Arab Emirates\n"
+            };
+            serviceClient.SynonymMaps.CreateOrUpdate(synonymMap);
+            return serviceClient;
+        }
+
+        
+
         private static MergeSkill CreateMergeSkill()
         {
             List<InputFieldMappingEntry> inputMappings = new List<InputFieldMappingEntry>();
