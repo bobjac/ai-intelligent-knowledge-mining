@@ -54,5 +54,11 @@ namespace MargiesTravel
     
         [IsSearchable]
         public string merged_text { get; set; }
+
+        [IsSearchable]
+        public string greeting { get; set; }
+
+        [IsFilterable, IsSearchable]
+        public string[] top_10_words { get; set; }
     }
 }

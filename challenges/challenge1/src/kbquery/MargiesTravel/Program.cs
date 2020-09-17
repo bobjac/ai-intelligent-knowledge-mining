@@ -150,6 +150,9 @@ namespace MargiesTravel
             KeyPhraseExtractionSkill keyPhraseSkill = CreateKeyPhraseExtractionSkill();
             EntityRecognitionSkill entityRecognitionSkill = CreateEntityRecognitionSkill();
             ImageAnalysisSkill imageAnalysisSkill = CreateImageAnalysisSkill();
+            WebApiSkill webApiSkill = CreateWebApiSkill();
+            WebApiSkill topTenWordsSkill = CreateTopTenWordsSkill();
+            
 
             List<Skill> skills = new List<Skill>();
             skills.Add(ocrSkill);
@@ -158,8 +161,74 @@ namespace MargiesTravel
             skills.Add(sentimentSkill);
             skills.Add(keyPhraseSkill);
             skills.Add(entityRecognitionSkill);
-
+            skills.Add(webApiSkill);
+            skills.Add(topTenWordsSkill);
             return skills;
+        }
+
+        private static WebApiSkill CreateTopTenWordsSkill()
+        {
+            List<InputFieldMappingEntry> inputMappings = new List<InputFieldMappingEntry>();
+            inputMappings.Add(new InputFieldMappingEntry(
+                name: "text",
+                source: "/document/merged_text"));
+
+            inputMappings.Add(new InputFieldMappingEntry(
+                name: "languageCode",
+                source: "/document/languageCode"));
+
+            List<OutputFieldMappingEntry> outputMappings = new List<OutputFieldMappingEntry>();
+            outputMappings.Add(new OutputFieldMappingEntry(
+                name: "words",
+                targetName: "top_10_words"));
+
+            Dictionary<string, string> headers = new Dictionary<string, string>();
+
+            TimeSpan timeSpan = new TimeSpan(0, 0, 215);
+            WebApiSkill webApiSkill = new WebApiSkill(
+                description: "Top Words skill",
+                uri: "https://margies7.azurewebsites.net/api/tokenizer?code=dcmuJd621t8PhlKtEARg3JXE1RkNnM0ab7xBIkxvwXtWkpFbVOTcKg==",
+                batchSize: 1,
+                timeout: timeSpan,
+                context: "/document",
+                inputs: inputMappings,
+                outputs: outputMappings,
+                httpMethod: "POST",
+                httpHeaders: headers
+            );
+
+            return webApiSkill;
+        }
+        
+
+        private static WebApiSkill CreateWebApiSkill()
+        {
+            List<InputFieldMappingEntry> inputMappings = new List<InputFieldMappingEntry>();
+            inputMappings.Add(new InputFieldMappingEntry(
+                name: "name",
+                source: "/document/file_name"));
+            
+            List<OutputFieldMappingEntry> outputMappings = new List<OutputFieldMappingEntry>();
+            outputMappings.Add(new OutputFieldMappingEntry(
+                name: "greeting",
+                targetName: "greeting"));
+
+            Dictionary<string, string> headers = new Dictionary<string, string>();
+           // headers.Add("Accept", "*/*");
+           // headers.Add("Content-Type", "text/plain");
+
+            WebApiSkill webApiSkill = new WebApiSkill(
+                description: "Hello World custom skill",
+                uri: "https://margies7.azurewebsites.net/api/hello-world?code=QJgjMDJ67MEC/D4MEaSranE9LPVH3/kA9aGok7Njwj9/WsnZqxKb6g==",
+                batchSize: 1,
+                context: "/document",
+                inputs: inputMappings,
+                outputs: outputMappings,
+                httpMethod: "POST",
+                httpHeaders: headers
+            );
+
+            return webApiSkill;
         }
 
         private static ImageAnalysisSkill CreateImageAnalysisSkill()
@@ -224,7 +293,7 @@ namespace MargiesTravel
             List<InputFieldMappingEntry> inputMappings = new List<InputFieldMappingEntry>();
             inputMappings.Add(new InputFieldMappingEntry(
                 name: "text",
-                source: "/document/content"));
+                source: "/document/file_name"));
 
             List<OutputFieldMappingEntry> outputMappings = new List<OutputFieldMappingEntry>();
             outputMappings.Add(new OutputFieldMappingEntry(
@@ -276,12 +345,12 @@ namespace MargiesTravel
             inputMappings.Add(new InputFieldMappingEntry(
                 name: "offsets",
                 source: "/document/normalized_images/*/contentOffset"));
-            inputMappings.Add(new InputFieldMappingEntry(
-                name: "tags",
-                source: "/document/normalized_images/*/tags"));
-            inputMappings.Add(new InputFieldMappingEntry(
-                name: "description",
-                source: "/document/normalized_images/*/description"));
+        //    inputMappings.Add(new InputFieldMappingEntry(
+        //        name: "tags",
+        //        source: "/document/normalized_images/*/tags"));
+        //    inputMappings.Add(new InputFieldMappingEntry(
+        //        name: "description",
+        //        source: "/document/normalized_images/*/description"));
 
             List<OutputFieldMappingEntry> outputMappings = new List<OutputFieldMappingEntry>();
             outputMappings.Add(new OutputFieldMappingEntry(
@@ -400,6 +469,14 @@ namespace MargiesTravel
             outputMappings.Add(new FieldMapping(
                 sourceFieldName: "/document/merged_text",
                 targetFieldName: "merged_text"));
+            
+            outputMappings.Add(new FieldMapping(
+                sourceFieldName: "/document/greeting",
+                targetFieldName: "greeting"));
+
+            outputMappings.Add(new FieldMapping(
+                sourceFieldName: "/document/top_10_words",
+                targetFieldName: "top_10_words"));
 
             Indexer blobIndexer = new Indexer(
                 name: "hotelreviews-blob-indexer",
