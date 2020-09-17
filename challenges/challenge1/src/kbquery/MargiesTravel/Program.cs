@@ -107,24 +107,19 @@ namespace MargiesTravel
 
             List<OutputFieldMappingEntry> outputMappings = new List<OutputFieldMappingEntry>();
             outputMappings.Add(new OutputFieldMappingEntry(
-                name: "urls",
-                targetName: "urls"));
+                name: "urls"));
 
             outputMappings.Add(new OutputFieldMappingEntry(
-                name: "persons",
-                targetName: "persons"));
+                name: "persons"));
 
             outputMappings.Add(new OutputFieldMappingEntry(
-                name: "emails",
-                targetName: "emails"));
+                name: "emails"));
 
             outputMappings.Add(new OutputFieldMappingEntry(
-                name: "locations",
-                targetName: "locations"));
+                name: "locations"));
 
             outputMappings.Add(new OutputFieldMappingEntry(
-                name: "dateTimes",
-                targetName: "dateTimes"));
+                name: "dateTimes"));
 
  
             List<EntityCategory> entityCategory = new List<EntityCategory>();
@@ -148,13 +143,18 @@ namespace MargiesTravel
 
         private static List<Skill> CreateSkills()
         {
+            OcrSkill ocrSkill = CreateOcrSkill();
+            MergeSkill mergeSkill = CreateMergeSkill();
             LanguageDetectionSkill languageDetectionSkill = CreateLanguageDetectionSkill();
             SentimentSkill sentimentSkill = CreateSentimentSkill();
             KeyPhraseExtractionSkill keyPhraseSkill = CreateKeyPhraseExtractionSkill();
             EntityRecognitionSkill entityRecognitionSkill = CreateEntityRecognitionSkill();
+            ImageAnalysisSkill imageAnalysisSkill = CreateImageAnalysisSkill();
 
             List<Skill> skills = new List<Skill>();
-            // skills.Add(languageDetectionSkill);
+            skills.Add(ocrSkill);
+            skills.Add(imageAnalysisSkill);
+            skills.Add(mergeSkill);
             skills.Add(sentimentSkill);
             skills.Add(keyPhraseSkill);
             skills.Add(entityRecognitionSkill);
@@ -162,6 +162,32 @@ namespace MargiesTravel
             return skills;
         }
 
+        private static ImageAnalysisSkill CreateImageAnalysisSkill()
+        {
+            List<InputFieldMappingEntry> inputMappings = new List<InputFieldMappingEntry>();
+            inputMappings.Add(new InputFieldMappingEntry(
+                name: "image",
+                source: "/document/normalized_images/*"));
+
+            List<OutputFieldMappingEntry> outputMappings = new List<OutputFieldMappingEntry>();
+            outputMappings.Add(new OutputFieldMappingEntry(
+                name: "tags",
+                targetName: "tags"));
+
+            outputMappings.Add(new OutputFieldMappingEntry(
+                name: "description",
+                targetName: "description"));
+
+            ImageAnalysisSkill imageAnalysisSkill = new ImageAnalysisSkill(
+                description: "performs image analysis",
+                context: "/document/normalized_images/*",
+                inputs: inputMappings,
+                outputs: outputMappings
+            );
+
+            return imageAnalysisSkill;
+        }
+        
         private static SentimentSkill CreateSentimentSkill()
         {
             List<InputFieldMappingEntry> inputMappings = new List<InputFieldMappingEntry>();
@@ -238,6 +264,40 @@ namespace MargiesTravel
             return ocrSkill;
         }
 
+        private static MergeSkill CreateMergeSkill()
+        {
+            List<InputFieldMappingEntry> inputMappings = new List<InputFieldMappingEntry>();
+            inputMappings.Add(new InputFieldMappingEntry(
+                name: "text",
+                source: "/document/content"));
+            inputMappings.Add(new InputFieldMappingEntry(
+                name: "itemsToInsert",
+                source: "/document/normalized_images/*/text"));
+            inputMappings.Add(new InputFieldMappingEntry(
+                name: "offsets",
+                source: "/document/normalized_images/*/contentOffset"));
+            inputMappings.Add(new InputFieldMappingEntry(
+                name: "tags",
+                source: "/document/normalized_images/*/tags"));
+            inputMappings.Add(new InputFieldMappingEntry(
+                name: "description",
+                source: "/document/normalized_images/*/description"));
+
+            List<OutputFieldMappingEntry> outputMappings = new List<OutputFieldMappingEntry>();
+            outputMappings.Add(new OutputFieldMappingEntry(
+                name: "mergedText",
+                targetName: "merged_text"));
+
+            MergeSkill mergeSkill = new MergeSkill(
+                description: "Create merged_text which includes all the textual representation of each image inserted at the right location in the content field.",
+                context: "/document",
+                inputs: inputMappings,
+                outputs: outputMappings,
+                insertPreTag: " ",
+                insertPostTag: " ");
+
+            return mergeSkill;
+        }
 
 
         private static Skillset CreateOrUpdateDemoSkillSet(SearchServiceClient serviceClient, IList<Skill> skills)
@@ -307,6 +367,14 @@ namespace MargiesTravel
 
             Console.WriteLine("Creating Blob Storage indexer...\n");
 
+            IDictionary<string, object> config = new Dictionary<string, object>();
+            config.Add(
+                key: "dataToExtract",
+                value: "contentAndMetadata");
+            config.Add(
+                key: "imageAction",
+                value: "generateNormalizedImages");
+
             // Add a field mapping to match the Id field in the documents to 
             // the HotelId key field in the index
             List<FieldMapping> map = new List<FieldMapping> {
@@ -320,28 +388,38 @@ namespace MargiesTravel
 
             List<FieldMapping> outputMappings = new List<FieldMapping>();
             outputMappings.Add(new FieldMapping(
-                sourceFieldName: "/document/pages/*/organizations/*",
-                targetFieldName: "organizations"));
+                sourceFieldName: "/document/content/persons/*",
+                targetFieldName: "persons"));
+          //  outputMappings.Add(new FieldMapping(
+          //      sourceFieldName: "/document/pages/*/keyPhrases/*",
+          //      targetFieldName: "keyPhrases"));
             outputMappings.Add(new FieldMapping(
-                sourceFieldName: "/document/pages/*/keyPhrases/*",
-                targetFieldName: "keyPhrases"));
+                sourceFieldName: "/document/sentiment",
+                targetFieldName: "sentiment"));
+
             outputMappings.Add(new FieldMapping(
-                sourceFieldName: "/document/languageCode",
-                targetFieldName: "languageCode"));
+                sourceFieldName: "/document/merged_text",
+                targetFieldName: "merged_text"));
 
             Indexer blobIndexer = new Indexer(
                 name: "hotelreviews-blob-indexer",
                 dataSourceName: blobDataSource.Name,
                 targetIndexName: indexName,
                 fieldMappings: map,
+                outputFieldMappings: outputMappings,
                 skillsetName: skillSet.Name,
+                parameters: new IndexingParameters(
+                    maxFailedItems: -1,
+                    maxFailedItemsPerBatch: -1,
+                    configuration: config),
                 schedule: new IndexingSchedule(TimeSpan.FromDays(1)));
 
             // Reset the indexer if it already exists
             bool exists = await searchService.Indexers.ExistsAsync(blobIndexer.Name);
             if (exists)
             {
-                await searchService.Indexers.ResetAsync(blobIndexer.Name);
+               // await searchService.Indexers.ResetAsync(blobIndexer.Name);
+               await searchService.Indexers.DeleteAsync(blobIndexer.Name);
             }
             await searchService.Indexers.CreateOrUpdateAsync(blobIndexer);
 

@@ -51,5 +51,8 @@ namespace MargiesTravel
 
         [IsSearchable]
         public string[] dateTimes { get; set; }
+    
+        [IsSearchable]
+        public string merged_text { get; set; }
     }
 }
